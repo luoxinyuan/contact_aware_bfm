@@ -80,12 +80,17 @@ class MotionTrackingCommand(Command):
                 joint_patterns: list[str] = ["waist_*", ".*_hip_.*", ".*_knee.*",".*shoulder.*", ".*elbow.*", ".*wrist.*"],
                 ignore_joint_patterns: list[str] = [".*ankle_roll_joint"],
                 feet_patterns: list[str] = ["left_ankle_roll_link", "right_ankle_roll_link"],
+                future_steps: Sequence[int] = (0, 2, 4, 8, 16),
                 init_noise: dict[str, float] = {},
                 reward_sigma: dict[str, list[float]] = {},
                 student_train: bool = False,):
         super().__init__(env)
-        
-        self.future_steps = torch.tensor([0, 2, 4, 8, 16], device=self.device)
+
+        if len(future_steps) < 2 or future_steps[0] != 0:
+            raise ValueError("future_steps must start at 0 and contain at least one future frame")
+        if any(curr <= prev for prev, curr in zip(future_steps, future_steps[1:])):
+            raise ValueError("future_steps must be strictly increasing")
+        self.future_steps = torch.tensor(future_steps, dtype=torch.int64, device=self.device)
 
         self.zero_init_prob = 1.0
 
@@ -488,6 +493,7 @@ class MotionTrackingCommand(Command):
         self.boot_indicator[:] = torch.clamp_min(self.boot_indicator - 1, 0)
 
         self._motion = self.dataset.get_slice(None, self.t, steps=self.future_steps)
+        self.update_reward_target()
 
         feet_vel = (self._motion.body_pos_w[:, 1, self.feet_idx_motion] - self._motion.body_pos_w[:, 0, self.feet_idx_motion]) / ((self.future_steps[1] - self.future_steps[0]) * self.env.step_dt) # [N, 2, 3]
         self.feet_standing = (feet_vel[:, :, :2].norm(dim=-1, keepdim=False) < 0.1)
@@ -1031,7 +1037,6 @@ class MotionTrackingCommand_impedance(MotionTrackingCommand):
 
     def before_update(self):
         super().before_update()
-        self.update_reward_target()
         if self.compliance:
             self.force_kp_tl.update_time()
             self.force_origin_tl.update_time()

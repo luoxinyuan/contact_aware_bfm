@@ -141,7 +141,7 @@ class _Env(EnvBase):
         self.physics_dt = self.sim.get_physics_dt()
         self.decimation = int(self.step_dt / self.physics_dt)
         
-        print(f"Step dt: {self.step_dt}, physics dt: {self.physics_dt}, decimation: {self.decimation}")
+        print(f"Step dt: {self.step_dt}, physics dt: {self.physics_dt}, decimation: {self.decimation}", flush=True)
 
         super().__init__(
             device=self.sim.device,

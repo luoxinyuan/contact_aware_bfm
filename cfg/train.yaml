@@ -24,7 +24,7 @@ camera_follow: false
 wandb:
   name: ${..exp_name}/${now:%m-%d}_${now:%H-%M}
   job_type: train
-  project: gentle_humanoid
+  project: contact_aware_bfm
   mode: online # set to 'disabled' when debugging locally
   tags: []
   id: null

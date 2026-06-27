@@ -26,6 +26,7 @@ def get_world_size():
 
 _print = print
 def print(*args, **kwargs):
+    kwargs.setdefault("flush", True)
     _print(f"[RANK {_LOCAL_RANK}/{_WORLD_SIZE}]:", *args, **kwargs)
 
 
